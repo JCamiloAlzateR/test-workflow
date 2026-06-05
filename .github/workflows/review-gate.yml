@@ -15,7 +15,8 @@ jobs:
 
       - name: Install OCR
         run: |
-          curl -LsSf https://github.com/alibaba/open-code-review/releases/download/v1.1.21/ocr-linux-amd64.tar.gz | tar -xzf - -C /usr/local/bin
+          curl -LsSf https://github.com/alibaba/open-code-review/releases/download/v1.1.21/opencodereview-linux-amd64.tar.gz | tar -xzf - -C /usr/local/bin
+          mv /usr/local/bin/opencodereview /usr/local/bin/ocr
 
       - name: Run OCR
         env:
