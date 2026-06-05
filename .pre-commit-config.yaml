@@ -1,39 +1,12 @@
 repos:
-  - repo: local
+  - repo: https://github.com/pre-commit-hooks
+    rev: v4.6.0
     hooks:
       - id: trailing-whitespace
-        name: trailing whitespace
-        entry: trailing-whitespace-fixer
-        language: system
-        types: [python]
-
       - id: end-of-file-fixer
-        name: end-of-file-fixer
-        entry: end-of-file-fixer
-        language: system
-        types: [python]
-
       - id: check-added-large-files
-        name: check-added-large-files
-        entry: check-added-large-files
-        language: system
         args: ['--maxkb=5000']
-
       - id: check-merge-conflict
-        name: check-merge-conflict
-        entry: check-merge-conflict
-        language: system
-        types: [python]
-
       - id: check-toml
-        name: check-toml
-        entry: check-toml
-        language: system
-        types: [python]
-
       - id: mixed-line-ending
-        name: mixed-line-ending
-        entry: mixed-line-ending
-        language: system
         args: ['--fix=lf']
-        types: [python]
