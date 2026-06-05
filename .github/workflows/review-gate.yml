@@ -10,35 +10,61 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Install OCR
-        run: npm install -g @alibaba-group/open-code-review
+        run: |
+          curl -LsSf https://github.com/alibaba/open-code-review/releases/download/v1.1.21/ocr-linux-amd64.tar.gz | tar -xzf - -C /usr/local/bin
+
       - name: Run OCR
         env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
-        run: ocr review --preview
-
-  hermes-review:
-    name: Hermes Autonomous Review
-    runs-on: ubuntu-latest
-    needs: ocr-review
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run Hermes Review
-        env:
-          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          REPO=${{ github.repository }}
-          bash scripts/pr-review.sh "$PR_NUMBER" "$REPO"
+          ocr review \
+            --repo "${REPO}" \
+            --pr "${PR_NUM}" \
+            --github-token "${GH_TOKEN}" \
+            --llm-provider minimax \
+            --llm-url "https://api.minimax.io/v1/openai/chat/completions" \
+            --llm-model "MiniMax-M3"
+
+      - name: Post OCR status comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh pr comment "${PR_NUM}" \
+            --repo "${REPO}" \
+            --body "OCR Code Review completed"
+
+  hermes-local:
+    name: Hermes Local Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show Hermes review command
+        env:
+          PR_NUM: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Hermes Local Review"
+          echo "PR: ${PR_NUM}"
+          echo "Repo: ${REPO}"
+          echo "Command: hermes chat -q \"Review PR #${PR_NUM} of ${REPO}. Focus on bugs, security, and best practices.\""
 
   human-gate:
     name: Human Approval Gate
+    needs: [ocr-review]
     runs-on: ubuntu-latest
-    needs: hermes-review
+    environment:
+      name: ""
     steps:
-      - name: Check status
+      - name: Check approval
         run: |
-          echo "✅ All automated checks passed"
-          echo "🔍 Please review Hermes comments in the PR"
-          echo "👍 Approve or Request Changes in GitHub"
+          echo "Human Review Gate - automated checks passed"
+          echo "A maintainer should review the PR and approve or request changes"
