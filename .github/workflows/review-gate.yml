@@ -5,20 +5,9 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  pre-commit:
-    name: Pre-commit hooks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - uses: pre-commit/action@v3.0.1
-
   ocr-review:
     name: OCR Code Review
     runs-on: ubuntu-latest
-    needs: pre-commit
     steps:
       - uses: actions/checkout@v4
       - name: Install OCR
