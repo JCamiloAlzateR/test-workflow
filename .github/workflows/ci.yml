@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  local-review:
+    name: Local Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Local review reminder
+        env:
+          PR_NUM: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "=========================================="
+          echo "  LOCAL REVIEW REQUIRED"
+          echo "=========================================="
+          echo ""
+          echo "Before merging, run Hermes locally:"
+          echo ""
+          echo "  gh pr checkout ${PR_NUM}"
+          echo "  hermes chat -q \"Review PR #${PR_NUM} of ${REPO}. Focus on bugs, security, and best practices. Output a brief summary with critical issues.\""
+          echo ""
+          echo "Also run pre-commit if configured:"
+          echo ""
+          echo "  pre-commit run --all-files"
+          echo "=========================================="
