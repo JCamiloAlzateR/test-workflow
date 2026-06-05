@@ -1,0 +1,64 @@
+name: Review Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pre-commit:
+    name: Pre-commit hooks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pre-commit
+        run: pip install pre-commit
+      - name: Run pre-commit
+        run: pre-commit run --all-files
+
+  ocr-review:
+    name: OCR Code Review
+    runs-on: ubuntu-latest
+    needs: pre-commit
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install OCR
+        run: npm install -g @alibaba-group/open-code-review
+      - name: Run OCR
+        env:
+          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+        run: ocr review --preview
+
+  hermes-review:
+    name: Hermes Autonomous Review
+    runs-on: ubuntu-latest
+    needs: ocr-review
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Hermes Review
+        env:
+          MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+          bash scripts/pr-review.sh "$PR_NUMBER" "$REPO"
+
+  human-gate:
+    name: Human Approval Gate
+    runs-on: ubuntu-latest
+    needs: hermes-review
+    steps:
+      - name: Check status
+        run: |
+          echo "✅ All automated checks passed"
+          echo "🔍 Please review Hermes comments in the PR"
+          echo "👍 Approve or Request Changes in GitHub"
